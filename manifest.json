@@ -1,0 +1,42 @@
+{
+    "name":  "菜谱小助手 · 有什么做什么",
+    "short_name":  "菜谱小助手",
+    "description":  "选出你手边有的食材，立刻知道能做什么菜。567 道中式菜谱，含各地特色菜，可离线使用。",
+    "lang":  "zh-CN",
+    "dir":  "ltr",
+    "start_url":  "./",
+    "scope":  "./",
+    "display":  "standalone",
+    "display_override":  [
+                             "standalone",
+                             "minimal-ui"
+                         ],
+    "orientation":  "portrait",
+    "background_color":  "#f7f3ec",
+    "theme_color":  "#d9542f",
+    "categories":  [
+                       "food",
+                       "lifestyle",
+                       "utilities"
+                   ],
+    "icons":  [
+                  {
+                      "src":  "icons/icon-192.png",
+                      "sizes":  "192x192",
+                      "type":  "image/png",
+                      "purpose":  "any"
+                  },
+                  {
+                      "src":  "icons/icon-512.png",
+                      "sizes":  "512x512",
+                      "type":  "image/png",
+                      "purpose":  "any"
+                  },
+                  {
+                      "src":  "icons/icon-512-maskable.png",
+                      "sizes":  "512x512",
+                      "type":  "image/png",
+                      "purpose":  "maskable"
+                  }
+              ]
+}

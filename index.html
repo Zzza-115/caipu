@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>菜谱小助手 · 有什么做什么</title>
+
+<meta name="description" content="选出你手边有的食材，立刻知道能做什么菜。567 道中式菜谱，覆盖家常炒菜、汤羹、主食与二十多个地方的特色菜，可离线使用。">
+<meta name="theme-color" content="#d9542f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="菜谱小助手">
+<meta name="format-detection" content="telephone=no">
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+<style>
+  :root{
+    --bg:#f7f3ec; --card:#fffdf9; --ink:#2c2620; --muted:#8b8073;
+    --line:#e9e1d5; --accent:#d9542f; --accent-soft:#fdeee8;
+    --green:#2f855a; --green-soft:#e9f6ef; --amber:#b7791f; --amber-soft:#fdf5e4;
+    --shadow:0 1px 2px rgba(60,40,20,.05), 0 8px 24px rgba(60,40,20,.06);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-t: env(safe-area-inset-top, 0px);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    background:var(--bg); color:var(--ink); font-size:15px; line-height:1.6;
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased; overscroll-behavior-y:contain;
+  }
+  button{font-family:inherit; cursor:pointer; touch-action:manipulation}
+  input,select,textarea{font-family:inherit; font-size:16px; color:var(--ink)}
+  @media (min-width:881px){ input,select,textarea{font-size:14px} }
+
+  header.top{
+    padding:calc(20px + var(--safe-t)) 20px 14px; max-width:1240px; margin:0 auto;
+    display:flex; align-items:flex-end; gap:14px; flex-wrap:wrap;
+  }
+  header.top h1{margin:0; font-size:23px; letter-spacing:.5px}
+  header.top h1 span{color:var(--accent)}
+  header.top p{margin:0; color:var(--muted); font-size:13px; padding-bottom:3px}
+  .top-actions{margin-left:auto; display:flex; gap:8px}
+
+  main{
+    max-width:1240px; margin:0 auto; padding:0 20px 60px;
+    display:grid; grid-template-columns:352px 1fr; gap:22px; align-items:start;
+  }
+
+  aside.panel{
+    position:sticky; top:16px; max-height:calc(100vh - 32px); overflow:auto;
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    box-shadow:var(--shadow); padding:16px;
+  }
+  aside.panel::-webkit-scrollbar{width:8px}
+  aside.panel::-webkit-scrollbar-thumb{background:#ded5c6; border-radius:8px}
+  .panel-grab{display:none}
+
+  .panel-title{
+    display:flex; align-items:center; justify-content:space-between;
+    font-size:13px; font-weight:600; color:var(--muted); letter-spacing:.6px;
+    margin:0 0 8px;
+  }
+  .search-row{display:flex; gap:8px}
+  .search-row input{
+    flex:1; min-width:0; padding:9px 12px; border:1px solid var(--line);
+    border-radius:10px; background:#fdfbf7; outline:none;
+  }
+  .search-row input:focus{border-color:var(--accent); background:#fff}
+  .btn{
+    border:1px solid var(--line); background:#fdfbf7; color:var(--ink);
+    padding:8px 13px; border-radius:10px; font-size:13px; transition:.15s;
+    white-space:nowrap;
+  }
+  .btn:hover{border-color:#d6cbb8; background:#fff}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+  .btn.primary:hover{background:#c84a27; border-color:#c84a27}
+  .btn.ghost{background:transparent; border-color:transparent; color:var(--muted); padding:4px 6px}
+  .btn.ghost:hover{color:var(--accent); background:var(--accent-soft)}
+
+  .chosen-box{
+    margin-top:12px; padding:10px; min-height:52px; border-radius:12px;
+    background:var(--accent-soft); border:1px solid #f6d9cd;
+  }
+  .chosen-box.empty{
+    background:#faf7f1; border:1px dashed #ded4c3; color:var(--muted);
+    font-size:13px; display:flex; align-items:center; justify-content:center; text-align:center;
+  }
+  .chosen-head{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12px; color:#a8532f; margin-bottom:6px;
+  }
+  .chosen-list{display:flex; flex-wrap:wrap; gap:6px}
+  .chosen-chip{
+    display:inline-flex; align-items:center; gap:4px; background:#fff;
+    border:1px solid #f0c9b8; color:#a8401f; border-radius:999px;
+    padding:3px 6px 3px 10px; font-size:13px; user-select:none;
+  }
+  .chosen-chip b{font-weight:400}
+  .chosen-chip i{
+    font-style:normal; cursor:pointer; width:22px; height:22px; line-height:20px;
+    text-align:center; border-radius:50%; color:#c97757; font-size:15px;
+  }
+  .chosen-chip i:hover{background:#f7d9cc; color:#8a2f12}
+
+  .pantry-row{
+    display:flex; align-items:center; gap:10px; margin:12px 0 4px;
+    font-size:13px; color:var(--muted); cursor:pointer; user-select:none; min-height:32px;
+  }
+  .switch{
+    width:38px; height:22px; border-radius:999px; background:#ddd3c2;
+    position:relative; transition:.2s; flex:none;
+  }
+  .switch::after{
+    content:""; position:absolute; top:2px; left:2px; width:18px; height:18px;
+    border-radius:50%; background:#fff; transition:.2s; box-shadow:0 1px 2px rgba(0,0,0,.2);
+  }
+  .switch.on{background:var(--green)}
+  .switch.on::after{transform:translateX(16px)}
+
+  .ing-groups{margin-top:10px; border-top:1px solid var(--line); padding-top:6px}
+  .ing-group{margin-top:6px}
+  .ing-group h4{
+    margin:8px 0 7px; font-size:12px; color:var(--muted); font-weight:600; letter-spacing:.4px;
+  }
+  .ing-items{display:flex; flex-wrap:wrap; gap:6px}
+  .ing-chip{
+    border:1px solid var(--line); background:#fff; border-radius:9px;
+    padding:6px 12px; font-size:14px; color:#5a4f43; transition:.12s; user-select:none; min-height:34px;
+  }
+  .ing-chip:hover{border-color:#cfc2ad; background:#fffdf8}
+  .ing-chip.sel{background:var(--green-soft); border-color:#9ed3b4; color:#22684a; font-weight:500}
+  .ing-chip.sel::before{content:"✓ "; font-size:11px}
+
+  .content-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+  .tabs{display:flex; gap:6px; flex-wrap:wrap}
+  .tab{
+    border:1px solid var(--line); background:var(--card); color:#6b6156;
+    padding:7px 15px; border-radius:999px; font-size:13px; transition:.15s;
+  }
+  .tab:hover{border-color:#d6cbb8}
+  .tab.on{background:var(--ink); border-color:var(--ink); color:#fdfbf7}
+  .content-head .spacer{flex:1}
+  .mini-select{
+    padding:8px 10px; border:1px solid var(--line); border-radius:10px;
+    background:var(--card); outline:none; font-size:13px; max-width:140px;
+  }
+  .mini-select:focus{border-color:var(--accent)}
+  .chip-toggle{
+    border:1px solid var(--line); background:var(--card); color:#6b6156;
+    padding:8px 13px; border-radius:999px; font-size:13px; white-space:nowrap; transition:.15s;
+  }
+  .chip-toggle.on{background:var(--green-soft); border-color:#bfe3cf; color:var(--green); font-weight:600}
+  .content-head input[type=search]{
+    padding:9px 14px; border:1px solid var(--line); border-radius:999px;
+    background:var(--card); outline:none; width:160px;
+  }
+  .content-head input[type=search]:focus{border-color:var(--accent)}
+
+  .stat-line{
+    font-size:13px; color:var(--muted); margin:0 0 14px;
+    display:flex; gap:14px; flex-wrap:wrap; align-items:center;
+  }
+  .stat-line b{color:var(--accent); font-weight:600}
+  .stat-line .ok{color:var(--green); font-weight:600}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px}
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:13px 15px; box-shadow:var(--shadow); cursor:pointer;
+    transition:.16s; position:relative; overflow:hidden;
+  }
+  .card:hover{transform:translateY(-2px); border-color:#d9cdb9; box-shadow:0 10px 28px rgba(60,40,20,.1)}
+  .card.ready{border-left:3px solid var(--green)}
+  .card.almost{border-left:3px solid #e0a83a}
+  .card.locked{border-left:3px solid #e2dacd}
+  .card-top{display:flex; align-items:baseline; gap:8px; margin-bottom:2px}
+  .card-top h3{margin:0; font-size:16px; font-weight:600; letter-spacing:.2px}
+  .badge{font-size:11px; padding:1px 7px; border-radius:999px; flex:none; border:1px solid transparent}
+  .badge.ready{background:var(--green-soft); color:var(--green); border-color:#bfe3cf}
+  .badge.almost{background:var(--amber-soft); color:var(--amber); border-color:#f0dca8}
+  .badge.locked{background:#f3efe7; color:#9a8f80; border-color:#e6dece}
+  .card-meta{font-size:12px; color:var(--muted); margin-bottom:8px}
+  .card-meta em{font-style:normal; color:#c8bdad; margin:0 5px}
+  .ing-mini{display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px}
+  .ing-mini span{font-size:12px; padding:1px 7px; border-radius:6px; background:#f2eee7; color:#a1968a}
+  .ing-mini span.have{background:var(--green-soft); color:#2b6e4f; font-weight:500}
+  .ing-mini span.auto{background:#f4f1ea; color:#9c9184; border:1px dashed #ded5c6}
+  .miss-line{font-size:12px; color:#948a7c; background:#f4f0e8; border-radius:8px; padding:3px 8px; display:inline-block}
+  .miss-line.ready{color:var(--green); background:var(--green-soft)}
+
+  .more-wrap{display:flex; justify-content:center; margin:20px 0 0}
+  .more-btn{padding:12px 30px; border-radius:12px; font-size:14px}
+
+  .empty-state{
+    text-align:center; padding:60px 20px; color:var(--muted);
+    background:var(--card); border:1px dashed var(--line); border-radius:16px;
+  }
+  .empty-state .big{font-size:34px; margin-bottom:8px}
+
+  .overlay{
+    position:fixed; inset:0; background:rgba(40,30,20,.45); backdrop-filter:blur(2px);
+    display:none; align-items:center; justify-content:center; padding:20px; z-index:80;
+  }
+  .overlay.show{display:flex}
+  .sheet{
+    background:var(--card); border-radius:18px; width:100%; max-width:660px;
+    max-height:88vh; overflow:auto; box-shadow:0 24px 70px rgba(40,25,10,.3);
+    animation:pop .18s ease-out; -webkit-overflow-scrolling:touch;
+  }
+  @keyframes pop{from{opacity:0; transform:translateY(10px) scale(.99)} to{opacity:1; transform:none}}
+  .sheet-head{
+    padding:18px 20px 12px; border-bottom:1px solid var(--line);
+    display:flex; align-items:flex-start; gap:12px; position:sticky; top:0;
+    background:var(--card); z-index:2; border-radius:18px 18px 0 0;
+  }
+  .sheet-head h2{margin:0 0 3px; font-size:20px}
+  .sheet-head .sub{font-size:12px; color:var(--muted)}
+  .sheet-body{padding:16px 20px calc(22px + var(--safe-b))}
+  .close-x{
+    margin-left:auto; border:none; background:#f4efe6; color:#7a6f61;
+    width:34px; height:34px; border-radius:50%; font-size:17px; line-height:1; flex:none;
+  }
+  .close-x:hover{background:#ece5d8}
+
+  .sec{margin-bottom:16px}
+  .sec h4{margin:0 0 7px; font-size:12px; color:var(--muted); font-weight:600; letter-spacing:.6px}
+  .req-list{display:flex; flex-wrap:wrap; gap:6px}
+  .req{
+    display:inline-flex; align-items:center; gap:5px; font-size:13px;
+    border:1px solid var(--line); background:#fff; border-radius:8px; padding:5px 10px;
+  }
+  .req .qty{color:var(--muted); font-size:12px}
+  .req.have{border-color:#bfe3cf; background:var(--green-soft); color:#256b4b}
+  .req.auto{border-color:#e2dacd; background:#f7f3ec; color:#8a7f72}
+  .req.miss{border-color:#f4cfcc; background:#fdf0ef; color:#b8433a}
+  .req .mk{font-size:11px}
+
+  ol.steps{margin:0; padding-left:0; list-style:none; counter-reset:s}
+  ol.steps li{position:relative; padding:0 0 13px 30px; counter-increment:s; font-size:14px}
+  ol.steps li::before{
+    content:counter(s); position:absolute; left:0; top:1px; width:21px; height:21px;
+    border-radius:50%; background:var(--accent-soft); color:var(--accent);
+    font-size:12px; font-weight:600; display:flex; align-items:center; justify-content:center;
+  }
+  ol.steps li:last-child{padding-bottom:0}
+  .tip-box{
+    background:#fdf8ec; border:1px solid #f0e2c2; border-radius:10px;
+    padding:9px 12px; font-size:13px; color:#8a6d33;
+  }
+  .tip-box b{color:#a9791f}
+  .sheet-foot{
+    display:flex; gap:8px; justify-content:flex-end; padding-top:14px;
+    border-top:1px solid var(--line); margin-top:16px; flex-wrap:wrap;
+  }
+  .sheet-foot .btn{padding:10px 18px}
+
+  .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  .form-grid .full{grid-column:1/-1}
+  .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:4px}
+  .field input, .field select, .field textarea{
+    width:100%; padding:10px 11px; border:1px solid var(--line);
+    border-radius:9px; background:#fdfbf7; outline:none;
+  }
+  .field textarea{resize:vertical; min-height:76px; line-height:1.6}
+  .field input:focus, .field select:focus, .field textarea:focus{
+    border-color:var(--accent); background:#fff;
+  }
+  .hint{font-size:11px; color:#a99d8c; margin-top:3px}
+
+  .toast{
+    position:fixed; left:50%; bottom:calc(28px + var(--safe-b)); transform:translate(-50%,20px);
+    background:#2c2620; color:#fff; padding:9px 18px; border-radius:999px;
+    font-size:13px; opacity:0; pointer-events:none; transition:.25s; z-index:99;
+    max-width:86vw; text-align:center;
+  }
+  .toast.show{opacity:1; transform:translate(-50%,0)}
+
+  .mobile-bar{display:none}
+  .panel-backdrop{display:none}
+  .panel-foot-mobile{display:none}
+  .install-tip{display:none}
+
+  @media (max-width:880px){
+    body{padding-bottom:calc(84px + var(--safe-b))}
+    header.top{padding:calc(14px + var(--safe-t)) 16px 10px; align-items:center; gap:10px}
+    header.top h1{font-size:19px}
+    header.top p{display:none}
+    .top-actions{gap:6px}
+    .top-actions .btn{padding:8px 11px; font-size:13px}
+
+    main{display:block; padding:0 12px 18px}
+
+    .content-head{position:sticky; top:0; z-index:6; background:var(--bg); padding:8px 0 10px; margin-bottom:8px; gap:8px}
+    .content-head .spacer{display:none}
+    .tabs{flex:1 1 100%; overflow-x:auto; flex-wrap:nowrap; -webkit-overflow-scrolling:touch; scrollbar-width:none; padding-bottom:2px}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{flex:none; padding:7px 14px}
+    .mini-select{flex:0 1 auto; max-width:44%}
+    .chip-toggle{flex:none}
+    .content-head input[type=search]{flex:1 1 100%; width:100%}
+
+    .stat-line{font-size:12.5px; gap:10px; margin-bottom:10px}
+    .grid{grid-template-columns:1fr; gap:10px}
+    .card{padding:12px 13px}
+    .card:hover{transform:none}
+    .card-top h3{font-size:15.5px}
+
+    aside.panel{
+      position:fixed; left:0; right:0; bottom:0; top:auto;
+      height:88vh; height:88dvh; max-height:88dvh;
+      border-radius:22px 22px 0 0; border-bottom:none;
+      padding:6px 16px calc(12px + var(--safe-b));
+      display:flex; flex-direction:column; overflow:hidden;
+      transform:translateY(101%); transition:transform .3s cubic-bezier(.32,.72,0,1);
+      z-index:70; box-shadow:0 -10px 40px rgba(40,25,10,.18); will-change:transform;
+    }
+    aside.panel.open{transform:translateY(0)}
+    .panel-grab{display:block; padding:6px 0 4px; text-align:center; flex:none}
+    .panel-grab span{display:inline-block; width:40px; height:4px; border-radius:2px; background:#ded4c3}
+    .panel-title{margin:4px 0 8px; flex:none}
+    .search-row{flex:none}
+    .chosen-box{flex:none; max-height:96px; overflow:auto}
+    .pantry-row{flex:none}
+    .ing-groups{flex:1 1 auto; overflow-y:auto; min-height:0; -webkit-overflow-scrolling:touch; overscroll-behavior:contain}
+    .ing-items{gap:7px}
+    .ing-chip{padding:8px 13px; font-size:14.5px; min-height:38px}
+    .chosen-chip i{width:24px; height:24px; line-height:22px}
+    .panel-foot-mobile{display:flex; gap:8px; flex:none; padding-top:10px; border-top:1px solid var(--line); background:var(--card)}
+    .panel-foot-mobile .btn{flex:1; padding:12px; font-size:15px}
+    .install-tip{display:block; text-align:center; font-size:12.5px; color:var(--muted); padding:10px 0 0; background:transparent; border:none; flex:none}
+
+    .panel-backdrop{
+      display:block; position:fixed; inset:0; background:rgba(40,30,20,.42);
+      z-index:65; opacity:0; pointer-events:none; transition:opacity .25s;
+    }
+    .panel-backdrop.show{opacity:1; pointer-events:auto}
+
+    .mobile-bar{
+      display:flex; align-items:center; gap:10px;
+      position:fixed; left:0; right:0; bottom:0; z-index:50;
+      padding:10px 14px calc(10px + var(--safe-b));
+      background:rgba(255,253,249,.95); backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px); border-top:1px solid var(--line);
+    }
+    .mobile-bar .mb-info{flex:1; min-width:0; line-height:1.25}
+    .mobile-bar .mb-info b{color:var(--accent); font-size:16px}
+    .mobile-bar .mb-info small{display:block; font-size:11.5px; color:var(--muted)}
+    .mobile-bar .btn.primary{padding:12px 18px; font-size:15px; border-radius:12px}
+
+    .overlay{align-items:flex-end; padding:0}
+    .sheet{
+      max-width:100%; max-height:92dvh; border-radius:22px 22px 0 0;
+      animation:slideUp .24s cubic-bezier(.32,.72,0,1);
+    }
+    @keyframes slideUp{from{transform:translateY(24px); opacity:.6} to{transform:none; opacity:1}}
+    .sheet-head{padding:16px 18px 12px; border-radius:22px 22px 0 0}
+    .sheet-body{padding:14px 18px calc(20px + var(--safe-b))}
+    .form-grid{grid-template-columns:1fr}
+    .sheet-foot .btn{flex:1; justify-content:center}
+    .toast{bottom:calc(96px + var(--safe-b))}
+  }
+
+  @media (display-mode:standalone){
+    header.top{padding-top:calc(18px + var(--safe-t))}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>菜谱小助手 <span>·</span> 有什么做什么</h1>
+    <p id="subtitle">选出你手边有的食材，立刻知道能做什么菜</p>
+  </div>
+  <div class="top-actions">
+    <button class="btn" id="btnRandom">🎲 随机</button>
+    <button class="btn primary" id="btnAdd">＋ 菜谱</button>
+  </div>
+</header>
+
+<main>
+  <aside class="panel" id="panel">
+    <div class="panel-grab" id="panelGrab"><span></span></div>
+
+    <div class="panel-title">
+      <span>我有的食材</span>
+      <button class="btn ghost" id="btnClear">清空</button>
+    </div>
+
+    <div class="search-row">
+      <input id="ingSearch" type="text" placeholder="搜索或输入食材" enterkeyhint="done" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <button class="btn" id="btnAddText">加</button>
+    </div>
+
+    <div class="chosen-box empty" id="chosenBox">还没选食材，下面点一点</div>
+
+    <div class="pantry-row" id="pantryRow">
+      <div class="switch" id="pantrySwitch"></div>
+      <span>油盐酱醋这些调料，我家都有</span>
+    </div>
+
+    <div class="ing-groups" id="ingGroups"></div>
+
+    <div class="panel-tail">
+      <button class="btn" id="btnExport" style="flex:1">导出我的</button>
+      <button class="btn" id="btnImport" style="flex:1">导入</button>
+      <input type="file" id="fileImport" accept=".json,application/json" hidden>
+    </div>
+
+    <div class="install-tip" id="installTip">把图标放到手机桌面 → 点这里</div>
+
+    <div class="panel-foot-mobile">
+      <button class="btn" id="btnClosePanel">收起</button>
+      <button class="btn primary" id="btnSeeResults">看看能做什么</button>
+    </div>
+  </aside>
+  <div class="panel-backdrop" id="panelBackdrop"></div>
+
+  <section class="content">
+    <div class="content-head">
+      <div class="tabs" id="tabs"></div>
+      <div class="spacer"></div>
+      <select class="mini-select" id="regionSel"></select>
+      <select class="mini-select" id="matchSel">
+        <option value="any">用到任意一样</option>
+        <option value="multi">用到两样以上</option>
+        <option value="ready">食材全齐</option>
+      </select>
+      <input type="search" id="recipeSearch" placeholder="搜菜名…" autocomplete="off">
+    </div>
+
+    <p class="stat-line" id="statLine"></p>
+    <div class="grid" id="grid"></div>
+    <div class="more-wrap" id="moreWrap"></div>
+  </section>
+</main>
+
+<nav class="mobile-bar" id="mobileBar">
+  <div class="mb-info" id="mbInfo">
+    <b id="mbCount">0</b> 样食材
+    <small id="mbReady">点这里选食材</small>
+  </div>
+  <button class="btn primary" id="mbOpen">选食材</button>
+</nav>
+
+<div class="overlay" id="detailOverlay">
+  <div class="sheet" id="detailSheet"></div>
+</div>
+
+<div class="overlay" id="formOverlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div>
+        <h2>添加一道菜</h2>
+        <div class="sub">写一次，以后就能被自动匹配到</div>
+      </div>
+      <button class="close-x" data-close="formOverlay">×</button>
+    </div>
+    <div class="sheet-body">
+      <form id="recipeForm">
+        <div class="form-grid">
+          <div class="field"><label>菜名</label><input name="name" required placeholder="例：土豆炖牛肉"></div>
+          <div class="field"><label>分类</label>
+            <select name="cat">
+              <option>荤菜</option><option>素菜</option><option>汤羹</option>
+              <option>主食</option><option>凉菜</option><option>甜点</option>
+            </select>
+          </div>
+          <div class="field"><label>用时（分钟）</label><input name="time" type="number" min="1" value="20"></div>
+          <div class="field"><label>难度</label>
+            <select name="diff"><option>简单</option><option>中等</option><option>较难</option></select>
+          </div>
+          <div class="field full"><label>主料（每行一个，写成「名字 用量」）</label>
+            <textarea name="main" required placeholder="牛肉 300g&#10;土豆 2个"></textarea>
+            <div class="hint">保持和菜谱库里的叫法一致，匹配才准</div>
+          </div>
+          <div class="field full"><label>调料（逗号分隔，可留空）</label>
+            <input name="sea" placeholder="生抽, 料酒, 盐">
+          </div>
+          <div class="field full"><label>步骤（每行一步）</label>
+            <textarea name="steps" required placeholder="牛肉切块焯水&#10;热油炒香葱姜…"></textarea>
+          </div>
+          <div class="field full"><label>小贴士（可留空）</label><input name="tip" placeholder="关键技巧写一句"></div>
+        </div>
+        <div class="sheet-foot">
+          <button type="button" class="btn" data-close="formOverlay">取消</button>
+          <button type="submit" class="btn primary">保存菜谱</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="installOverlay">
+  <div class="sheet">
+    <div class="sheet-head">
+      <div>
+        <h2>放到手机桌面</h2>
+        <div class="sub">装好后就是一个 App，离线也能用</div>
+      </div>
+      <button class="close-x" data-close="installOverlay">×</button>
+    </div>
+    <div class="sheet-body">
+      <div class="sec">
+        <h4>iPhone / iPad · 用 Safari 打开</h4>
+        <ol class="steps">
+          <li>点屏幕底部的「分享」按钮（方框里一个向上的箭头）。</li>
+          <li>往下滑，选「添加到主屏幕」。</li>
+          <li>点右上角「添加」，桌面就有图标了。</li>
+        </ol>
+      </div>
+      <div class="sec">
+        <h4>安卓 · 用 Chrome / Edge 打开</h4>
+        <ol class="steps">
+          <li>点右上角「⋮」菜单。</li>
+          <li>选「安装应用」或「添加到主屏幕」。</li>
+          <li>确认后即可，之后可断网使用。</li>
+        </ol>
+      </div>
+      <div class="tip-box">注意：微信里打开没法安装，请点右上角「…」选「在浏览器中打开」。</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+/* =========================================================
+   0. 数据
+   ========================================================= */
+var VOCAB = window.VOCAB || { groups: [], synonyms: {} };
+var DATA = window.RECIPE_DATA || [];
+
+var ALIAS = {
+  '番茄':'西红柿','洋柿子':'西红柿','马铃薯':'土豆','洋芋':'土豆',
+  '蛋':'鸡蛋','辣椒':'青椒','肉丝':'猪里脊','肉末':'猪肉末','肉馅':'猪肉末',
+  '嫩豆腐':'豆腐','内酯豆腐':'豆腐','老豆腐':'豆腐','黑木耳':'木耳',
+  '青瓜':'黄瓜','冬菇':'香菇','花生':'花生米','卷心菜':'包菜','圆白菜':'包菜',
+  '青蒜':'蒜苗','蒜苔':'蒜薹','大虾':'虾','基围虾':'虾','剩饭':'米饭','隔夜饭':'米饭',
+  '挂面':'挂面','红薯':'地瓜','番薯':'地瓜','白木耳':'银耳','大枣':'红枣',
+  '大蒜':'蒜','蒜头':'蒜','蒜末':'蒜','蒜蓉':'蒜','蒜泥':'蒜',
+  '生姜':'姜','老姜':'姜','小葱':'葱','香葱':'葱','大葱':'葱','葱花':'葱',
+  '陈醋':'醋','米醋':'醋','酱油':'生抽','糖':'白糖','玉米淀粉':'淀粉','生粉':'淀粉',
+  '油':'食用油','色拉油':'食用油','芝麻油':'香油','麻油':'香油',
+  '辣椒干':'干辣椒','豆瓣':'豆瓣酱','豉油':'蒸鱼豉油','胡椒粉':'白胡椒'
+};
+// 词表里的同义词全部并入
+if (VOCAB.synonyms) {
+  for (var _k in VOCAB.synonyms) {
+    if (!Object.prototype.hasOwnProperty.call(ALIAS, _k)) ALIAS[_k] = VOCAB.synonyms[_k];
+  }
+}
+
+function norm(raw){
+  var s = String(raw == null ? '' : raw).trim().replace(/\s+/g, '');
+  if (!s) return '';
+  return Object.prototype.hasOwnProperty.call(ALIAS, s) ? ALIAS[s] : s;
+}
+
+var CATALOG = (VOCAB.groups || []).map(function(g){
+  return { group: g.label, items: g.items || [], pantry: !!g.pantry };
+});
+
+var PANTRY = {};
+CATALOG.forEach(function(g){
+  if (g.pantry) g.items.forEach(function(x){ PANTRY[x] = 1; });
+});
+
+var CATS = ['全部','荤菜','素菜','汤羹','主食','凉菜','甜点'];
+var PAGE = 40;
+
+/* =========================================================
+   1. 状态
+   ========================================================= */
+var LSKEY = { mine:'rf.mine.v1', custom:'rf.custom.v1', pantry:'rf.pantry.v1', pref:'rf.pref.v1' };
+
+var store = {
+  get:function(k, d){
+    try{ var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; }
+  },
+  set:function(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+var state = {
+  mine: {},
+  pantryOn: store.get(LSKEY.pantry, true) !== false,
+  cat: '全部',
+  region: '全部',
+  q: '',
+  matchMode: (store.get(LSKEY.pref, {}) || {}).matchMode || 'any',
+  limit: PAGE,
+  custom: store.get(LSKEY.custom, []) || []
+};
+
+(store.get(LSKEY.mine, []) || []).forEach(function(n){
+  var k = norm(n); if (k) state.mine[k] = 1;
+});
+
+function saveMine(){ store.set(LSKEY.mine, Object.keys(state.mine)); }
+
+function allRecipes(){ return DATA.concat(state.custom); }
+
+/* =========================================================
+   2. 匹配：命中就算数，越多越准
+   ========================================================= */
+function match(rec){
+  var need = [], names = {};
+  (rec.main || []).forEach(function(p){
+    var n = norm(p[0]);
+    if (!n || names[n]) return;
+    names[n] = 1;
+    need.push({ name:n, qty:p[1] || '', src:'main' });
+  });
+  (rec.sea || []).forEach(function(s){
+    var n = norm(s);
+    if (!n || names[n]) return;
+    names[n] = 1;
+    need.push({ name:n, qty:'', src:'sea' });
+  });
+
+  var mineHits = [], autoHits = [], miss = [];
+  need.forEach(function(x){
+    if (state.mine[x.name]) mineHits.push(x);
+    else if (state.pantryOn && PANTRY[x.name]) autoHits.push(x);
+    else miss.push(x);
+  });
+
+  return {
+    r: rec,
+    need: need,
+    mineHits: mineHits,
+    autoHits: autoHits,
+    miss: miss,
+    ready: miss.length === 0,
+    hits: mineHits.length,
+    ratio: need.length ? mineHits.length / need.length : 0
+  };
+}
+
+/* 卡片上显示的食材：主料 + 需要你自己备的调料 */
+function cardIngs(m){
+  return m.need.filter(function(x){
+    if (x.src === 'main') return true;
+    if (!state.pantryOn) return true;
+    return !PANTRY[x.name];
+  });
+}
+
+/* =========================================================
+   3. 工具
+   ========================================================= */
+var $ = function(id){ return document.getElementById(id); };
+
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function toast(msg){
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(function(){ t.classList.remove('show'); }, 1800);
+}
+
+function isMobile(){ return window.matchMedia('(max-width:880px)').matches; }
+
+function openPanel(){
+  $('panel').classList.add('open');
+  $('panelBackdrop').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closePanel(){
+  $('panel').classList.remove('open');
+  $('panelBackdrop').classList.remove('show');
+  if (!document.querySelector('.overlay.show')) document.body.style.overflow = '';
+}
+
+/* =========================================================
+   4. 渲染：左面板
+   ========================================================= */
+function renderChosen(){
+  var names = Object.keys(state.mine);
+  var box = $('chosenBox');
+  if (!names.length){
+    box.className = 'chosen-box empty';
+    box.textContent = '还没选食材，下面点一点';
+  } else {
+    box.className = 'chosen-box';
+    var html = '<div class="chosen-head"><span>已选 ' + names.length + ' 样</span></div><div class="chosen-list">';
+    names.forEach(function(n){
+      html += '<span class="chosen-chip"><b>' + esc(n) + '</b><i data-rm="' + esc(n) + '">×</i></span>';
+    });
+    html += '</div>';
+    box.innerHTML = html;
+  }
+  $('mbCount').textContent = names.length;
+}
+
+function renderCatalog(){
+  var q = norm($('ingSearch').value || '');
+  var html = '';
+  CATALOG.forEach(function(g){
+    var items = g.items.filter(function(it){
+      if (!q) return true;
+      return it.indexOf(q) >= 0 || q.indexOf(it) >= 0;
+    });
+    if (!items.length) return;
+    html += '<div class="ing-group"><h4>' + esc(g.group) + '</h4><div class="ing-items">';
+    items.forEach(function(it){
+      html += '<button type="button" class="ing-chip' + (state.mine[it] ? ' sel' : '') +
+              '" data-ing="' + esc(it) + '">' + esc(it) + '</button>';
+    });
+    html += '</div></div>';
+  });
+  if (!html) html = '<div style="font-size:13px;color:#a99d8c;padding:10px 2px">食材库里没有，回车直接加进「我的」</div>';
+  $('ingGroups').innerHTML = html;
+}
+
+function renderTabs(){
+  var html = '';
+  CATS.forEach(function(c){
+    html += '<button class="tab' + (state.cat === c ? ' on' : '') + '" data-cat="' + esc(c) + '">' + esc(c) + '</button>';
+  });
+  $('tabs').innerHTML = html;
+}
+
+function renderRegions(){
+  var counts = {};
+  allRecipes().forEach(function(r){
+    var k = r.region || '家常';
+    counts[k] = (counts[k] || 0) + 1;
+  });
+  var keys = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
+  var html = '<option value="全部">全部地区 (' + allRecipes().length + ')</option>';
+  keys.forEach(function(k){
+    html += '<option value="' + esc(k) + '">' + esc(k) + ' (' + counts[k] + ')</option>';
+  });
+  $('regionSel').innerHTML = html;
+  $('regionSel').value = state.region;
+}
+
+/* =========================================================
+   5. 渲染：结果
+   ========================================================= */
+function renderResults(){
+  var q = (state.q || '').trim();
+  var mineN = Object.keys(state.mine).length;
+
+  var list = allRecipes().map(match).filter(function(m){
+    if (state.cat !== '全部' && m.r.cat !== state.cat) return false;
+    if (state.region !== '全部' && (m.r.region || '家常') !== state.region) return false;
+    if (q && m.r.name.indexOf(q) < 0) return false;
+    if (mineN > 0 && m.hits === 0) return false;
+    if (mineN > 0 && state.matchMode === 'multi' && m.hits < 2) return false;
+    if (state.matchMode === 'ready' && !m.ready) return false;
+    return true;
+  });
+
+  list.sort(function(a, b){
+    // 1) 用上你越多食材越靠前  2) 同样多时，能直接做的优先
+    if (a.hits !== b.hits) return b.hits - a.hits;
+    if (a.ready !== b.ready) return a.ready ? -1 : 1;
+    if (Math.abs(b.ratio - a.ratio) > 0.0001) return b.ratio - a.ratio;
+    if (a.miss.length !== b.miss.length) return a.miss.length - b.miss.length;
+    if (a.r.time !== b.r.time) return a.r.time - b.r.time;
+    return 0;
+  });
+
+  var readyN = list.filter(function(m){ return m.ready; }).length;
+  var multiN = list.filter(function(m){ return m.hits >= 2; }).length;
+
+  var stat = '<span>符合 <b>' + list.length + '</b> 道</span>';
+  if (mineN){
+    stat += '<span class="ok">食材全齐 <b>' + readyN + '</b> 道</span>';
+    if (multiN) stat += '<span>用上你两样以上 <b>' + multiN + '</b> 道</span>';
+    stat += '<span>已选 ' + mineN + ' 样</span>';
+  } else {
+    stat += '<span>先选几样食材，结果会自动收窄</span>';
+  }
+  $('statLine').innerHTML = stat;
+
+  if (mineN){
+    $('mbReady').textContent = list.length ? ('符合 ' + list.length + ' 道，能直接做 ' + readyN + ' 道') : '再加一两样试试';
+  } else {
+    $('mbReady').textContent = '点这里选食材';
+  }
+
+  if (!list.length){
+    $('grid').innerHTML = '<div class="empty-state" style="grid-column:1/-1">' +
+      '<div class="big">🍳</div><div>没有符合条件的菜谱</div>' +
+      (mineN ? '<div style="margin-top:6px;font-size:13px">把「匹配要求」调回「用到任意一样」试试</div>' : '') +
+      '</div>';
+    $('grid')._list = [];
+    $('moreWrap').innerHTML = '';
+    return;
+  }
+
+  var shown = list.slice(0, state.limit);
+  var html = '';
+
+  shown.forEach(function(m, idx){
+    var cls = m.ready ? 'ready' : (m.miss.length <= 1 ? 'almost' : 'locked');
+    var badge = m.ready ? '可以做' : ('差 ' + m.miss.length + ' 样');
+
+    html += '<div class="card ' + cls + '" data-idx="' + idx + '">';
+    html += '<div class="card-top"><h3>' + esc(m.r.name) + '</h3>' +
+            '<span class="badge ' + cls + '">' + badge + '</span></div>';
+    html += '<div class="card-meta">' + esc(m.r.cat) + '<em>·</em>' + esc(m.r.region || '家常') +
+            '<em>·</em>' + m.r.time + ' 分钟<em>·</em>' + esc(m.r.diff) + '</div>';
+
+    var ings = cardIngs(m);
+    html += '<div class="ing-mini">';
+    ings.forEach(function(x){
+      var mine = !!state.mine[x.name];
+      var auto = !mine && state.pantryOn && !!PANTRY[x.name];
+      html += '<span class="' + (mine ? 'have' : (auto ? 'auto' : '')) + '">' + esc(x.name) + '</span>';
+    });
+    html += '</div>';
+
+    if (m.miss.length){
+      html += '<div class="miss-line">还差：' + m.miss.slice(0, 4).map(function(x){ return esc(x.name); }).join('、') +
+              (m.miss.length > 4 ? ' 等 ' + m.miss.length + ' 样' : '') + '</div>';
+    } else {
+      html += '<div class="miss-line ready">食材齐了，开火吧 🔥</div>';
+    }
+    html += '</div>';
+  });
+
+  $('grid').innerHTML = html;
+  $('grid')._list = shown;
+
+  if (list.length > shown.length){
+    $('moreWrap').innerHTML = '<button class="btn more-btn" id="btnMore">显示更多（还有 ' +
+      (list.length - shown.length) + ' 道）</button>';
+  } else if (list.length > PAGE){
+    $('moreWrap').innerHTML = '<div style="font-size:12px;color:#a99d8c">已经到底了，共 ' + list.length + ' 道</div>';
+  } else {
+    $('moreWrap').innerHTML = '';
+  }
+}
+
+/* =========================================================
+   6. 详情
+   ========================================================= */
+function openDetail(m){
+  var r = m.r;
+  var html = '';
+  html += '<div class="sheet-head"><div><h2>' + esc(r.name) + '</h2>' +
+          '<div class="sub">' + esc(r.cat) + ' · ' + esc(r.region || '家常') + ' · ' +
+          r.time + ' 分钟 · ' + esc(r.diff) + '</div>' +
+          '</div><button class="close-x" data-close="detailOverlay">×</button></div>';
+
+  html += '<div class="sheet-body">';
+
+  html += '<div class="sec"><h4>主料</h4><div class="req-list">';
+  (r.main || []).forEach(function(p){
+    var n = norm(p[0]);
+    var mine = !!state.mine[n];
+    var auto = !mine && state.pantryOn && !!PANTRY[n];
+    html += '<span class="req ' + (mine ? 'have' : (auto ? 'auto' : 'miss')) + '">' +
+            '<span class="mk">' + (mine ? '✓' : (auto ? '·' : '✗')) + '</span>' + esc(n) +
+            (p[1] ? '<span class="qty">' + esc(p[1]) + '</span>' : '') + '</span>';
+  });
+  html += '</div></div>';
+
+  var seaOnly = (r.sea || []).filter(function(s){
+    var n = norm(s);
+    return !(r.main || []).some(function(p){ return norm(p[0]) === n; });
+  });
+  if (seaOnly.length){
+    html += '<div class="sec"><h4>调料' + (state.pantryOn ? '（默认你有，已忽略）' : '') + '</h4><div class="req-list">';
+    seaOnly.forEach(function(s){
+      var n = norm(s);
+      var mine = !!state.mine[n];
+      var auto = !mine && state.pantryOn && !!PANTRY[n];
+      html += '<span class="req ' + (mine ? 'have' : (auto ? 'auto' : 'miss')) + '">' +
+              '<span class="mk">' + (mine ? '✓' : (auto ? '·' : '✗')) + '</span>' + esc(n) + '</span>';
+    });
+    html += '</div></div>';
+  }
+
+  html += '<div class="sec"><h4>做法</h4><ol class="steps">';
+  (r.steps || []).forEach(function(s){ html += '<li>' + esc(s) + '</li>'; });
+  html += '</ol></div>';
+
+  if (r.tip){
+    html += '<div class="sec"><div class="tip-box"><b>小贴士：</b>' + esc(r.tip) + '</div></div>';
+  }
+
+  if (m.miss.length){
+    html += '<div class="sec"><div class="tip-box" style="background:#fdf0ef;border-color:#f4cfcc;color:#b8433a">' +
+            '<b>还需要：</b>' + m.miss.map(function(x){ return esc(x.name); }).join('、') + '</div></div>';
+  }
+
+  html += '<div class="sheet-foot">';
+  if (r._custom){
+    html += '<button class="btn" id="btnDelRecipe" style="color:#c0453c">删除这道菜</button>';
+  }
+  html += '<button class="btn primary" data-close="detailOverlay">看完了</button></div>';
+  html += '</div>';
+
+  $('detailSheet').innerHTML = html;
+  $('detailOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  var del = $('btnDelRecipe');
+  if (del){
+    del.onclick = function(){
+      if (!confirm('删除「' + r.name + '」？')) return;
+      state.custom = state.custom.filter(function(x){ return x !== r; });
+      store.set(LSKEY.custom, state.custom);
+      closeOverlay('detailOverlay');
+      refreshAll();
+      toast('已删除');
+    };
+  }
+}
+
+function closeOverlay(id){
+  $(id).classList.remove('show');
+  if (!document.querySelector('.overlay.show') && !$('panel').classList.contains('open')){
+    document.body.style.overflow = '';
+  }
+}
+
+function refreshAll(){
+  renderChosen();
+  renderCatalog();
+  renderTabs();
+  renderRegions();
+  renderResults();
+}
+
+/* 条件变化时重置分页 */
+function resetAndRender(){
+  state.limit = PAGE;
+  renderResults();
+}
+
+/* =========================================================
+   7. 事件
+   ========================================================= */
+function bind(){
+  $('ingGroups').addEventListener('click', function(e){
+    var b = e.target.closest('.ing-chip');
+    if (!b) return;
+    var n = b.getAttribute('data-ing');
+    if (state.mine[n]) delete state.mine[n]; else state.mine[n] = 1;
+    saveMine();
+    renderChosen();
+    renderCatalog();
+    resetAndRender();
+  });
+
+  $('chosenBox').addEventListener('click', function(e){
+    var i = e.target.closest('[data-rm]');
+    if (!i) return;
+    delete state.mine[i.getAttribute('data-rm')];
+    saveMine();
+    renderChosen();
+    renderCatalog();
+    resetAndRender();
+  });
+
+  $('ingSearch').addEventListener('input', renderCatalog);
+  $('ingSearch').addEventListener('keydown', function(e){
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    addFreeText();
+  });
+  $('btnAddText').onclick = addFreeText;
+
+  function addFreeText(){
+    var inp = $('ingSearch');
+    var raw = inp.value.trim();
+    if (!raw) return;
+    var n = norm(raw);
+    state.mine[n] = 1;
+    saveMine();
+    inp.value = '';
+    renderChosen();
+    renderCatalog();
+    resetAndRender();
+    toast('已加入：' + n);
+  }
+
+  $('btnClear').onclick = function(){
+    if (!Object.keys(state.mine).length) return;
+    state.mine = {};
+    saveMine();
+    renderChosen();
+    renderCatalog();
+    resetAndRender();
+  };
+
+  $('pantryRow').onclick = function(){
+    state.pantryOn = !state.pantryOn;
+    store.set(LSKEY.pantry, state.pantryOn);
+    updatePantrySwitch();
+    resetAndRender();
+  };
+
+  $('tabs').addEventListener('click', function(e){
+    var b = e.target.closest('.tab');
+    if (!b) return;
+    state.cat = b.getAttribute('data-cat');
+    renderTabs();
+    resetAndRender();
+  });
+
+  $('regionSel').addEventListener('change', function(e){
+    state.region = e.target.value;
+    resetAndRender();
+  });
+
+  $('onlyReady') && ($('onlyReady').onclick = null);
+
+  $('matchSel').addEventListener('change', function(e){
+    state.matchMode = e.target.value;
+    store.set(LSKEY.pref, { matchMode: state.matchMode });
+    resetAndRender();
+  });
+
+  $('recipeSearch').addEventListener('input', function(e){
+    state.q = e.target.value;
+    resetAndRender();
+  });
+
+  $('grid').addEventListener('click', function(e){
+    var c = e.target.closest('.card');
+    if (!c) return;
+    var list = $('grid')._list || [];
+    var m = list[Number(c.getAttribute('data-idx'))];
+    if (m) openDetail(m);
+  });
+
+  $('moreWrap').addEventListener('click', function(e){
+    if (!e.target.closest('#btnMore')) return;
+    state.limit += PAGE;
+    renderResults();
+  });
+
+  $('btnRandom').onclick = function(){
+    var list = allRecipes().map(match);
+    var pool = list.filter(function(m){ return m.hits > 0 && m.ready; });
+    if (!pool.length) pool = list.filter(function(m){ return m.hits > 0 && m.miss.length <= 1; });
+    if (!pool.length) pool = list.filter(function(m){ return m.hits > 0; });
+    if (!pool.length) pool = list;
+    if (!pool.length) return;
+    openDetail(pool[Math.floor(Math.random() * pool.length)]);
+  };
+
+  $('mobileBar').onclick = openPanel;
+  $('panelBackdrop').onclick = closePanel;
+  $('panelGrab').onclick = closePanel;
+  $('btnClosePanel').onclick = closePanel;
+  $('btnSeeResults').onclick = function(){
+    closePanel();
+    window.scrollTo({ top:0, behavior:'smooth' });
+  };
+
+  document.addEventListener('click', function(e){
+    var c = e.target.closest('[data-close]');
+    if (c) closeOverlay(c.getAttribute('data-close'));
+    if (e.target.classList && e.target.classList.contains('overlay')) e.target.classList.remove('show');
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape'){
+      closeOverlay('detailOverlay');
+      closeOverlay('formOverlay');
+      closeOverlay('installOverlay');
+      closePanel();
+    }
+  });
+
+  $('btnAdd').onclick = function(){
+    $('recipeForm').reset();
+    $('formOverlay').classList.add('show');
+  };
+
+  $('recipeForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var f = e.target;
+    var name = f.name.value.trim();
+    if (!name){ toast('写个菜名吧'); return; }
+
+    var main = f.main.value.split('\n').map(function(l){ return l.trim(); }).filter(Boolean)
+      .map(function(l){
+        var parts = l.split(/[\s,，:：]+/).filter(Boolean);
+        return [parts[0], parts.slice(1).join(' ')];
+      });
+    if (!main.length){ toast('至少写一样主料'); return; }
+
+    var sea = f.sea.value.split(/[,，、\s]+/).filter(Boolean);
+    var steps = f.steps.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    if (!steps.length){ toast('至少写一步做法'); return; }
+
+    state.custom.push({
+      name:name, cat:f.cat.value, region:'我的',
+      time:Number(f.time.value) || 20, diff:f.diff.value,
+      main:main, sea:sea, steps:steps, tip:f.tip.value.trim(), _custom:true
+    });
+    store.set(LSKEY.custom, state.custom);
+    closeOverlay('formOverlay');
+    refreshAll();
+    toast('已添加：' + name);
+  });
+
+  $('btnExport').onclick = function(){
+    var data = { type:'recipe-finder', version:2, custom:state.custom, mine:Object.keys(state.mine) };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '我的菜谱-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+    toast('已导出');
+  };
+
+  $('btnImport').onclick = function(){ $('fileImport').click(); };
+
+  $('fileImport').addEventListener('change', function(e){
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try{
+        var data = JSON.parse(reader.result);
+        var added = 0;
+        (data.custom || []).forEach(function(r){
+          if (!r || !r.name || !r.main) return;
+          r._custom = true;
+          var dup = state.custom.some(function(x){ return x.name === r.name; }) ||
+                    DATA.some(function(x){ return x.name === r.name; });
+          if (!dup){ state.custom.push(r); added++; }
+        });
+        if (data.mine && Array.isArray(data.mine)){
+          data.mine.forEach(function(n){ var k = norm(n); if (k) state.mine[k] = 1; });
+          saveMine();
+        }
+        store.set(LSKEY.custom, state.custom);
+        refreshAll();
+        toast(added ? '导入了 ' + added + ' 道菜' : '没有新菜谱可导入');
+      }catch(err){ toast('文件格式不对'); }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  $('installTip').onclick = function(){
+    if (deferredPrompt){ deferredPrompt.prompt(); deferredPrompt = null; return; }
+    $('installOverlay').classList.add('show');
+  };
+
+  window.addEventListener('resize', function(){
+    if (!isMobile()) closePanel();
+  });
+}
+
+function updatePantrySwitch(){
+  var s = $('pantrySwitch');
+  if (state.pantryOn) s.classList.add('on'); else s.classList.remove('on');
+  var ms = $('matchSel');
+  if (ms) ms.value = state.matchMode;
+}
+
+/* =========================================================
+   8. PWA
+   ========================================================= */
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault();
+  deferredPrompt = e;
+  var tip = $('installTip');
+  if (tip) tip.textContent = '点这里一键装到桌面';
+});
+
+function isStandalone(){
+  return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+         window.navigator.standalone === true;
+}
+
+if ('serviceWorker' in navigator &&
+    (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+
+/* =========================================================
+   启动
+   ========================================================= */
+bind();
+updatePantrySwitch();
+refreshAll();
+
+$('subtitle').textContent = '共 ' + allRecipes().length + ' 道菜 · 选出你手边的食材，立刻知道能做什么';
+
+if (isStandalone()){
+  var tip = $('installTip');
+  if (tip) tip.style.display = 'none';
+}
+</script>
+</body>
+</html>
