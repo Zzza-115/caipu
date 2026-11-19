@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>菜谱小助手 · 有什么做什么</title>
 
-<meta name="description" content="选出你手边有的食材，立刻知道能做什么菜。567 道中式菜谱，覆盖家常炒菜、汤羹、主食与二十多个地方的特色菜，可离线使用。">
+<meta name="description" content="选出你手边有的食材，立刻知道能做什么菜。927 道中式菜谱，覆盖家常炒菜、汤羹、主食与三十多个地方的特色菜，可离线使用。">
 <meta name="theme-color" content="#d9542f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -736,13 +736,16 @@ function renderTabs(){
 }
 
 function renderRegions(){
-  var counts = {};
+  var counts = {}, specialN = 0;
   allRecipes().forEach(function(r){
     var k = r.region || '家常';
     counts[k] = (counts[k] || 0) + 1;
+    if (k !== '家常' && k !== '我的') specialN++;
   });
   var keys = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
-  var html = '<option value="全部">全部地区 (' + allRecipes().length + ')</option>';
+  var total = allRecipes().length;
+  var html = '<option value="全部">全部地区 (' + total + ')</option>';
+  html += '<option value="__special">🌏 地方特色 (' + specialN + ')</option>';
   keys.forEach(function(k){
     html += '<option value="' + esc(k) + '">' + esc(k) + ' (' + counts[k] + ')</option>';
   });
@@ -759,7 +762,10 @@ function renderResults(){
 
   var list = allRecipes().map(match).filter(function(m){
     if (state.cat !== '全部' && m.r.cat !== state.cat) return false;
-    if (state.region !== '全部' && (m.r.region || '家常') !== state.region) return false;
+    var reg = m.r.region || '家常';
+    if (state.region === '__special'){
+      if (reg === '家常' || reg === '我的') return false;
+    } else if (state.region !== '全部' && reg !== state.region) return false;
     if (q && m.r.name.indexOf(q) < 0) return false;
     if (mineN > 0 && m.hits === 0) return false;
     if (mineN > 0 && state.matchMode === 'multi' && m.hits < 2) return false;

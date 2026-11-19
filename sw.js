@@ -1,8 +1,10 @@
 /* 菜谱小助手 · Service Worker
-   策略：先回缓存，再走网络；联网时顺便更新缓存。
-   改版本号即可让所有手机强制拿新内容。 */
+   策略：网络优先。每次打开都先去拉最新内容，成功就顺手更新缓存；
+   断网或请求失败时回落到缓存，所以离线照样能用。
+   这样一来，以后只改 data.js，手机上打开就是新版，不用再改版本号。
+*/
 
-var CACHE = 'recipe-app-v3';
+var CACHE = 'recipe-app-v5';
 
 var ASSETS = [
   './',
@@ -44,15 +46,15 @@ self.addEventListener('fetch', function(e){
   if (url.origin !== self.location.origin) return;
 
   e.respondWith(
-    caches.match(req, { ignoreSearch: true }).then(function(hit){
-      if (hit) return hit;
-
-      return fetch(req).then(function(res){
-        if (!res || res.status !== 200 || res.type === 'opaque') return res;
+    fetch(req).then(function(res){
+      if (res && res.status === 200 && res.type === 'basic') {
         var copy = res.clone();
         caches.open(CACHE).then(function(c){ c.put(req, copy); });
-        return res;
-      }).catch(function(){
+      }
+      return res;
+    }).catch(function(){
+      return caches.match(req, { ignoreSearch: true }).then(function(hit){
+        if (hit) return hit;
         if (req.mode === 'navigate') return caches.match('./index.html');
       });
     })
